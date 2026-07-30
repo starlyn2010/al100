@@ -28,6 +28,8 @@ const SECTOR_CENTERS: Record<string, [number, number]> = {
   "Los Prados": [18.495, -69.87],
   "Ensanche Ozama": [18.46, -69.9],
   "Villa Consuelo": [18.505, -69.885],
+  "Sabana Perdida": [18.545, -69.863],
+  "Los Guaricanos": [18.542, -69.933],
 }
 
 const buildRoutePath = (sector: string) => {
@@ -78,7 +80,8 @@ export default function CitizenRoutePage() {
           Number(pos.coords.longitude.toFixed(5)),
         ]
         setLocation(nextLocation)
-        setSector(guessSectorFromLocation(nextLocation[0], nextLocation[1]))
+        const detected = guessSectorFromLocation(nextLocation[0], nextLocation[1])
+        if (detected !== "Desconocido") setSector(detected)
         setLocationLoading(false)
       },
       (error) => {
@@ -90,6 +93,7 @@ export default function CitizenRoutePage() {
   }
 
   const schedule = normalizeSectorSchedule(sector)
+  const activeSchedule = schedule ?? normalizeSectorSchedule("Zona Colonial")
 
   return (
     <div className="space-y-6">
@@ -133,9 +137,11 @@ export default function CitizenRoutePage() {
         {(location || locationError) && (
           <CardContent className="px-4 pb-4 pt-0">
             {location && (
-              <p className="text-xs text-muted-foreground">
-                Ubicación detectada: {location[0].toFixed(5)}, {location[1].toFixed(5)}
-              </p>
+              <div>
+                <p className="text-xs text-muted-foreground">
+                  Ubicación detectada: {location[0].toFixed(5)}, {location[1].toFixed(5)}
+                </p>
+              </div>
             )}
             {locationError && <p className="text-xs text-destructive">{locationError}</p>}
           </CardContent>
@@ -208,11 +214,16 @@ export default function CitizenRoutePage() {
           <p className="text-xs text-muted-foreground mb-2">
             Todos los sectores · Seleccionado resaltado
           </p>
+          {sector === "Desconocido" && (
+            <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/10 p-3 text-sm text-yellow-600 mb-2">
+              Ubicación no reconocida. Selecciona un sector manualmente para ver su horario.
+            </div>
+          )}
           {Object.values(sectorSchedules).map((s) => (
             <div
               key={s.sector}
               className={`flex items-center justify-between rounded-xl border p-3 ${
-                s.sector === schedule.sector
+                s.sector === sector
                   ? "border-accent/50 bg-accent/10"
                   : "border-border/70 bg-muted/15"
               }`}
@@ -223,7 +234,7 @@ export default function CitizenRoutePage() {
                   {s.days} · {s.time}
                 </p>
               </div>
-              {s.sector === schedule.sector && (
+              {s.sector === sector && (
                 <div className="text-[10px] text-accent font-medium">Seleccionado</div>
               )}
             </div>

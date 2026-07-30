@@ -146,6 +146,34 @@ export const sectors: SectorRecord[] = [
     reason: "Mercados y movimiento nocturno sostienen el aumento esperado.",
     factors: ["mercados", "vida nocturna", "densidad alta"],
   },
+  {
+    id: "S-006",
+    code: "SP-006",
+    name: "Sabana Perdida",
+    density: "Alta",
+    trucks: 1,
+    currentVolume: 2900,
+    predictedVolume: 3190,
+    trend: "up",
+    pct: 10,
+    freq: "Lun, Mié, Vie · 7:00 AM",
+    reason: "Crecimiento poblacional en Santo Domingo Norte incrementa el volumen de residuos.",
+    factors: ["alta densidad", "crecimiento urbano", "comercio local"],
+  },
+  {
+    id: "S-007",
+    code: "LG-007",
+    name: "Los Guaricanos",
+    density: "Alta",
+    trucks: 1,
+    currentVolume: 3100,
+    predictedVolume: 3410,
+    trend: "up",
+    pct: 10,
+    freq: "Mar, Jue, Sáb · 6:30 AM",
+    reason: "Alta densidad poblacional y actividad comercial generan volumen constante.",
+    factors: ["alta densidad", "comercio", "tráfico pesado"],
+  },
 ]
 
 export const trucks: TruckRecord[] = [
@@ -219,6 +247,34 @@ export const trucks: TruckRecord[] = [
     routeColor: "#F43F5E",
     routeName: "Ruta Consuelo",
   },
+  {
+    id: "CAM-006",
+    name: "Camión 6",
+    plate: "PQR-678",
+    driver: "Rosa M.",
+    sector: "Sabana Perdida",
+    status: "available",
+    fuel: 88,
+    speed: 0,
+    load: 15,
+    lastGps: "hace 6 min",
+    routeColor: "#FBBF24",
+    routeName: "Ruta Sabana Perdida",
+  },
+  {
+    id: "CAM-007",
+    name: "Camión 7",
+    plate: "STU-901",
+    driver: "José R.",
+    sector: "Los Guaricanos",
+    status: "available",
+    fuel: 76,
+    speed: 0,
+    load: 20,
+    lastGps: "hace 5 min",
+    routeColor: "#EC4899",
+    routeName: "Ruta Guaricanos",
+  },
 ]
 
 export const routes: RouteRecord[] = [
@@ -277,6 +333,28 @@ export const routes: RouteRecord[] = [
     color: "#F43F5E",
     notes: "Pendiente de despacho para cubrir mercado y perímetro residencial.",
   },
+  {
+    id: "R-006",
+    truck: "CAM-006",
+    driver: "Rosa M.",
+    sector: "Sabana Perdida",
+    status: "pending",
+    start: "7:00 AM",
+    duration: "—",
+    color: "#FBBF24",
+    notes: "Cubre sector Santo Domingo Norte con paradas en avenidas principales.",
+  },
+  {
+    id: "R-007",
+    truck: "CAM-007",
+    driver: "José R.",
+    sector: "Los Guaricanos",
+    status: "pending",
+    start: "6:30 AM",
+    duration: "—",
+    color: "#EC4899",
+    notes: "Cobertura de calles principales y avenida Los Guaricanos.",
+  },
 ]
 
 export const sectorSchedules: Record<string, { sector: string; days: string; time: string }> = {
@@ -285,6 +363,8 @@ export const sectorSchedules: Record<string, { sector: string; days: string; tim
   "Los Prados": { sector: "Los Prados", days: "Lun, Mié, Vie", time: "8:30 AM" },
   "Ensanche Ozama": { sector: "Ensanche Ozama", days: "Lun-Vie", time: "8:15 AM" },
   "Villa Consuelo": { sector: "Villa Consuelo", days: "Mar, Jue, Sáb", time: "8:45 AM" },
+  "Sabana Perdida": { sector: "Sabana Perdida", days: "Lun, Mié, Vie", time: "7:00 AM" },
+  "Los Guaricanos": { sector: "Los Guaricanos", days: "Mar, Jue, Sáb", time: "6:30 AM" },
 }
 
 const defaultIncidents: IncidentRecord[] = [
@@ -443,11 +523,13 @@ export function guessSectorFromLocation(lat: number, lng: number) {
   if (lat >= 18.489 && lat <= 18.501 && lng >= -69.876 && lng <= -69.864) return "Los Prados"
   if (lat >= 18.454 && lat <= 18.466 && lng >= -69.906 && lng <= -69.894) return "Ensanche Ozama"
   if (lat >= 18.499 && lat <= 18.512 && lng >= -69.891 && lng <= -69.879) return "Villa Consuelo"
-  return "Zona Colonial"
+  if (lat >= 18.53 && lat <= 18.57 && lng >= -69.88 && lng <= -69.84) return "Sabana Perdida"
+  if (lat >= 18.52 && lat <= 18.56 && lng >= -69.95 && lng <= -69.91) return "Los Guaricanos"
+  return "Desconocido"
 }
 
 export function normalizeSectorSchedule(sectorName: string) {
-  return sectorSchedules[sectorName] || sectorSchedules["Zona Colonial"]
+  return sectorSchedules[sectorName] || null
 }
 
 export function routeColorList(): string[] {

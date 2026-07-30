@@ -1,8 +1,8 @@
 "use client"
 
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet"
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap, useMapEvents } from "react-leaflet"
 import L from "leaflet"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { mapConfig } from "@/lib/mapbox"
 
 interface TruckData {
@@ -40,20 +40,40 @@ function ChangeView({ center, zoom }: { center: [number, number]; zoom: number }
   return null
 }
 
+function ZoomPersist() {
+  useMapEvents({
+    zoomend: (e) => {
+      try { localStorage.setItem("al100_map_zoom", String(e.target.getZoom())) } catch {}
+    },
+  })
+  return null
+}
+
 export default function TruckMap({
   trucks,
   center = mapConfig.defaultCenter,
-  zoom = mapConfig.defaultZoom,
+  zoom: zoomProp = mapConfig.defaultZoom,
   routePaths = [],
 }: TruckMapProps) {
+  const [zoom] = useState(() => {
+    if (typeof window === "undefined") return zoomProp
+    try {
+      const saved = window.localStorage.getItem("al100_map_zoom")
+      return saved ? Number(saved) : zoomProp
+    } catch {
+      return zoomProp
+    }
+  })
+
   return (
     <MapContainer
       center={center}
       zoom={zoom}
       style={{ width: "100%", height: "100%" }}
-      zoomControl={false}
+      zoomControl={true}
     >
       <ChangeView center={center} zoom={zoom} />
+      <ZoomPersist />
       <TileLayer url={mapConfig.tileUrl} attribution={mapConfig.attribution} />
       {routePaths.map((route, idx) => (
         <Polyline
