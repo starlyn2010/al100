@@ -3,16 +3,17 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
+import type { LucideIcon } from "lucide-react"
 import {
   LayoutDashboard, Truck, Route, Map, Users, AlertTriangle,
-  Trash2, Bell, LogOut, ChevronLeft, ChevronRight, Crosshair,
+  Trash2, LogOut, ChevronLeft, ChevronRight, Crosshair,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useState } from "react"
 
 type UserRole = "citizen" | "driver" | "admin"
 
-const navItems: Record<UserRole, Array<{ href: string; label: string; icon: any }>> = {
+const navItems: Record<UserRole, Array<{ href: string; label: string; icon: LucideIcon }>> = {
   citizen: [
     { href: "/ruta", label: "Ruta en Vivo", icon: Crosshair },
     { href: "/reportar", label: "Reportar", icon: AlertTriangle },
@@ -40,11 +41,11 @@ export function Sidebar({ role, onLogout }: { role: UserRole; onLogout: () => vo
   return (
     <aside
       className={cn(
-        "h-screen bg-card border-r border-border flex flex-col transition-all duration-300",
+        "h-screen bg-card/90 backdrop-blur-xl border-r border-border/70 flex flex-col transition-all duration-300 shadow-[0_0_0_1px_rgba(255,255,255,0.02),0_20px_60px_rgba(0,0,0,0.35)]",
         collapsed ? "w-16" : "w-60"
       )}
     >
-      <div className="p-4 flex items-center justify-between border-b border-border">
+      <div className="p-4 flex items-center justify-between border-b border-border/70">
         {!collapsed && (
           <span className="font-heading text-lg font-bold text-accent">AL100</span>
         )}
@@ -52,7 +53,7 @@ export function Sidebar({ role, onLogout }: { role: UserRole; onLogout: () => vo
           variant="ghost"
           size="icon"
           onClick={() => setCollapsed(!collapsed)}
-          className="text-muted-foreground"
+          className="text-muted-foreground hover:bg-muted/50"
         >
           {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
         </Button>
@@ -67,8 +68,8 @@ export function Sidebar({ role, onLogout }: { role: UserRole; onLogout: () => vo
               <div
                 className={cn(
                   "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200",
-                  active
-                    ? "bg-accent/15 text-accent font-medium"
+                active
+                    ? "bg-accent/15 text-accent font-medium shadow-[inset_0_0_0_1px_rgba(34,197,94,0.22)]"
                     : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                 )}
               >
@@ -80,7 +81,7 @@ export function Sidebar({ role, onLogout }: { role: UserRole; onLogout: () => vo
         })}
       </nav>
 
-      <div className="p-2 border-t border-border">
+      <div className="p-2 border-t border-border/70">
         <Button
           variant="ghost"
           className="w-full justify-start text-muted-foreground hover:text-destructive"

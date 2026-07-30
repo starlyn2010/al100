@@ -5,7 +5,6 @@ import dynamic from "next/dynamic"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Filter } from "lucide-react"
 
 const TruckMap = dynamic(() => import("@/components/map/TruckMap"), { ssr: false })
 

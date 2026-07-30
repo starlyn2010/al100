@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+@import "leaflet/dist/leaflet.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -81,6 +82,7 @@
   --sidebar-accent-foreground: #F8FAFC;
   --sidebar-border: #475569;
   --sidebar-ring: #22C55E;
+  color-scheme: dark;
 }
 
 .dark {
@@ -116,16 +118,46 @@
   --sidebar-accent-foreground: #F8FAFC;
   --sidebar-border: #475569;
   --sidebar-ring: #22C55E;
+  color-scheme: dark;
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
-  body {
-    @apply bg-background text-foreground;
-  }
   html {
-    @apply font-sans;
+    @apply font-sans scroll-smooth;
+    background:
+      radial-gradient(circle at top, rgba(34, 197, 94, 0.15), transparent 28%),
+      radial-gradient(circle at bottom right, rgba(148, 163, 184, 0.12), transparent 24%),
+      var(--background);
+  }
+  body {
+    @apply min-h-screen bg-background text-foreground;
+    background-image:
+      radial-gradient(circle at top left, rgba(34, 197, 94, 0.09), transparent 22%),
+      radial-gradient(circle at bottom right, rgba(15, 23, 42, 0.35), transparent 30%);
+    background-attachment: fixed;
+    font-family:
+      "Open Sans",
+      "Inter",
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      sans-serif;
+  }
+}
+
+@layer utilities {
+  .font-heading {
+    font-family:
+      "Poppins",
+      "Inter",
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      sans-serif;
   }
 }

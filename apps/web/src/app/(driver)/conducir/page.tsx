@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect } from "react"
 import dynamic from "next/dynamic"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -11,12 +11,6 @@ import { toast } from "sonner"
 const TruckMap = dynamic(() => import("@/components/map/TruckMap"), { ssr: false })
 
 const INITIAL_POSITION = { lat: 18.486, lng: -69.889 }
-const SECTOR_POLYGON = [
-  { lat: 18.48, lng: -69.895 },
-  { lat: 18.49, lng: -69.895 },
-  { lat: 18.49, lng: -69.880 },
-  { lat: 18.48, lng: -69.880 },
-]
 
 export default function DriverPage() {
   const [routeActive, setRouteActive] = useState(false)
@@ -116,7 +110,7 @@ export default function DriverPage() {
           <div className="h-[400px] w-full">
             <TruckMap
               trucks={[{ id: "my-truck", name: "Mi Camión", ...position, status: "on_route" }]}
-              center={[position.lng, position.lat]}
+              center={[position.lat, position.lng]}
               zoom={15}
             />
           </div>

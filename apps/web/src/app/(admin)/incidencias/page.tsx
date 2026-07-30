@@ -1,10 +1,11 @@
 "use client"
 
 import { useState } from "react"
+import type { LucideIcon } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { AlertTriangle, Wrench, ShieldAlert, CheckCircle2 } from "lucide-react"
+import { AlertTriangle, Wrench, ShieldAlert } from "lucide-react"
 
 const INCIDENTS = [
   { id: "INC-001", type: "overflow", desc: "Contenedor lleno en Duarte esq. Mercedes", reporter: "Juan P.", date: "Hoy 9:30 AM", status: "reported" },
@@ -14,7 +15,7 @@ const INCIDENTS = [
   { id: "INC-005", type: "overflow", desc: "Contenedores saturados en Calle Principal", reporter: "Ana L.", date: "Ayer 2:00 PM", status: "in_progress" },
 ]
 
-const TYPE_ICONS: Record<string, any> = {
+const TYPE_ICONS: Record<string, LucideIcon> = {
   overflow: AlertTriangle,
   trash_spill: AlertTriangle,
   blocked_road: ShieldAlert,
