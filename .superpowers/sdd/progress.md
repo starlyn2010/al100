@@ -1,3 +1,7 @@
 Task 0: complete (commit 59fad22, scaffold)
 Task 1: complete (commit 43777fe, nextjs+shadcn)
 Task 2: complete (commit 21ab4d7, fastapi+cleanarch)
+Task 3+4: complete (DB models + auth routes)
+Task 5-8: complete (routes, incidents, AI predictions, admin)
+Task 9-12: complete (all frontend pages)
+Task 13-16: complete (integration, PWA, seed)
