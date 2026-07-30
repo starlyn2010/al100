@@ -1,9 +1,10 @@
 "use client"
 
-import Map, { Marker, NavigationControl, Popup } from "react-map-gl/mapbox"
-import "mapbox-gl/dist/mapbox-gl.css"
-import { useState } from "react"
-import { Truck } from "lucide-react"
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet"
+import L from "leaflet"
+import "leaflet/dist/leaflet.css"
+import { useEffect } from "react"
+import { mapConfig } from "@/lib/mapbox"
 
 interface TruckData {
   id: string
@@ -17,61 +18,48 @@ interface TruckMapProps {
   trucks: TruckData[]
   center?: [number, number]
   zoom?: number
-  height?: string
 }
 
-export default function TruckMap({
-  trucks,
-  center = [-69.889, 18.486],
-  zoom = 12,
-}: TruckMapProps) {
-  const [popup, setPopup] = useState<TruckData | null>(null)
+const truckIcon = L.divIcon({
+  className: "",
+  html: `<div style="width:36px;height:36px;background:#22C55E;border-radius:50%;display:flex;align-items:center;justify-content:center;border:3px solid #0F172A;box-shadow:0 0 20px rgba(34,197,94,0.5);"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M5 17H3V6a1 1 0 0 1 1-1h9v12H7"/><path d="M15 17h2v-4l-2-3h-4v7"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg></div>`,
+  iconSize: [36, 36],
+  iconAnchor: [18, 18],
+})
 
+function ChangeView({ center, zoom }: { center: [number, number]; zoom: number }) {
+  const map = useMap()
+  useEffect(() => {
+    map.setView(center, zoom)
+  }, [center, zoom, map])
+  return null
+}
+
+export default function TruckMap({ trucks, center = mapConfig.defaultCenter, zoom = mapConfig.defaultZoom }: TruckMapProps) {
   return (
-    <Map
-      mapboxAccessToken={process.env.NEXT_PUBLIC_MAPBOX_TOKEN}
-      initialViewState={{ longitude: center[0], latitude: center[1], zoom }}
-      mapStyle="mapbox://styles/mapbox/dark-v11"
+    <MapContainer
+      center={center}
+      zoom={zoom}
       style={{ width: "100%", height: "100%" }}
-      attributionControl={false}
+      zoomControl={false}
     >
-      <NavigationControl position="top-right" />
-
+      <ChangeView center={center} zoom={zoom} />
+      <TileLayer url={mapConfig.tileUrl} attribution={mapConfig.attribution} />
       {trucks.map((truck) => (
         <Marker
           key={truck.id}
-          longitude={truck.lng}
-          latitude={truck.lat}
-          onClick={(e) => {
-            e.originalEvent.stopPropagation()
-            setPopup(truck)
-          }}
+          position={[truck.lat, truck.lng]}
+          icon={truckIcon}
         >
-          <div className="relative cursor-pointer">
-            <div className="absolute -inset-2 bg-accent/20 rounded-full animate-ping" />
-            <div className="relative w-10 h-10 bg-accent rounded-full flex items-center justify-center shadow-lg shadow-accent/30 border-2 border-background">
-              <Truck className="w-5 h-5 text-white" />
+          <Popup>
+            <div className="text-sm">
+              <strong>{truck.name}</strong>
+              <br />
+              <span className="text-gray-500">{truck.status === "on_route" ? "En ruta" : truck.status}</span>
             </div>
-          </div>
+          </Popup>
         </Marker>
       ))}
-
-      {popup && (
-        <Popup
-          longitude={popup.lng}
-          latitude={popup.lat}
-          onClose={() => setPopup(null)}
-          closeButton={true}
-          className="z-50"
-        >
-          <div className="p-2 min-w-[150px]">
-            <p className="font-bold text-sm">{popup.name}</p>
-            <p className="text-xs text-muted-foreground">
-              {popup.status === "on_route" ? "En ruta" : popup.status}
-            </p>
-          </div>
-        </Popup>
-      )}
-    </Map>
+    </MapContainer>
   )
 }
