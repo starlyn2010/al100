@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { AlertTriangle, Wrench, ShieldAlert, CheckCircle2 } from "lucide-react"
 import { toast } from "sonner"
+import { saveIncident, seedNotificationFromIncident, type IncidentType } from "@/lib/al100-data"
 
 export default function DriverReportPage() {
   const [type, setType] = useState("")
@@ -15,8 +16,18 @@ export default function DriverReportPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    toast.success("Reporte enviado a central")
-    setDone(true)
+    saveIncident({
+      type: type as IncidentType,
+      description: desc,
+      reporter_name: "Chofer",
+      reporter_role: "driver",
+      sector: "Zona Colonial",
+      location: null,
+    }).then((incident) => {
+      seedNotificationFromIncident(incident)
+      toast.success("Reporte enviado a central")
+      setDone(true)
+    })
   }
 
   if (done) return (

@@ -1,6 +1,6 @@
 "use client"
 
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet"
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet"
 import L from "leaflet"
 import { useEffect } from "react"
 import { mapConfig } from "@/lib/mapbox"
@@ -17,6 +17,12 @@ interface TruckMapProps {
   trucks: TruckData[]
   center?: [number, number]
   zoom?: number
+  routePaths?: Array<{
+    id: string
+    points: [number, number][]
+    color?: string
+    label?: string
+  }>
 }
 
 const truckIcon = L.divIcon({
@@ -34,7 +40,12 @@ function ChangeView({ center, zoom }: { center: [number, number]; zoom: number }
   return null
 }
 
-export default function TruckMap({ trucks, center = mapConfig.defaultCenter, zoom = mapConfig.defaultZoom }: TruckMapProps) {
+export default function TruckMap({
+  trucks,
+  center = mapConfig.defaultCenter,
+  zoom = mapConfig.defaultZoom,
+  routePaths = [],
+}: TruckMapProps) {
   return (
     <MapContainer
       center={center}
@@ -44,6 +55,20 @@ export default function TruckMap({ trucks, center = mapConfig.defaultCenter, zoo
     >
       <ChangeView center={center} zoom={zoom} />
       <TileLayer url={mapConfig.tileUrl} attribution={mapConfig.attribution} />
+      {routePaths.map((route, idx) => (
+        <Polyline
+          key={route.id}
+          positions={route.points}
+          pathOptions={{
+            color: route.color || "#22C55E",
+            weight: idx === 0 && route.id === "driver-route-history" ? 6 : 4,
+            opacity: idx === 0 && route.id === "driver-route-history" ? 0.6 : 0.9,
+            lineCap: "round",
+            lineJoin: "round",
+            dashArray: route.id === "driver-route-history" ? undefined : "6 6",
+          }}
+        />
+      ))}
       {trucks.map((truck) => (
         <Marker
           key={truck.id}

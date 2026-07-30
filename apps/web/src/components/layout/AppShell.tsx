@@ -1,11 +1,10 @@
 "use client"
 
-import { useState } from "react"
 import { Sidebar } from "./Sidebar"
-import { Bell, Menu } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Menu } from "lucide-react"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { useRouter } from "next/navigation"
+import { NotificationSheet } from "./NotificationSheet"
 
 type UserRole = "citizen" | "driver" | "admin"
 
@@ -16,7 +15,6 @@ interface AppShellProps {
 
 export function AppShell({ children, role }: AppShellProps) {
   const router = useRouter()
-  const [notifCount] = useState(3)
 
   const handleLogout = () => {
     localStorage.removeItem("al100_user")
@@ -45,14 +43,7 @@ export function AppShell({ children, role }: AppShellProps) {
           </div>
 
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="relative border border-border/60 bg-background/40">
-              <Bell className="w-5 h-5" />
-              {notifCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-destructive rounded-full text-[10px] font-bold flex items-center justify-center">
-                  {notifCount}
-                </span>
-              )}
-            </Button>
+            <NotificationSheet />
           </div>
         </header>
 

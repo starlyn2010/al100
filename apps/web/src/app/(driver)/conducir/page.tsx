@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect, useRef, useState } from "react"
 import dynamic from "next/dynamic"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -11,37 +11,87 @@ import { toast } from "sonner"
 const TruckMap = dynamic(() => import("@/components/map/TruckMap"), { ssr: false })
 
 const INITIAL_POSITION = { lat: 18.486, lng: -69.889 }
+const ROUTE_PATH: [number, number][] = [
+  [18.486, -69.889],
+  [18.487, -69.8878],
+  [18.4884, -69.8866],
+  [18.4894, -69.8848],
+  [18.4888, -69.8828],
+  [18.4874, -69.8818],
+  [18.4862, -69.8834],
+  [18.4856, -69.8858],
+  [18.4858, -69.8884],
+]
 
 export default function DriverPage() {
   const [routeActive, setRouteActive] = useState(false)
   const [position, setPosition] = useState(INITIAL_POSITION)
   const [elapsed, setElapsed] = useState(0)
   const [routePoints, setRoutePoints] = useState<Array<{ lat: number; lng: number }>>([])
+  const animationRef = useRef<number | null>(null)
+  const lastFrameRef = useRef<number | null>(null)
+  const segmentRef = useRef(0)
+  const progressRef = useRef(0)
 
-  useEffect(() => {
-    let interval: NodeJS.Timeout | null = null
-    if (routeActive) {
-      interval = setInterval(() => {
-        setElapsed((e) => e + 1)
-      }, 1000)
+  const resetAnimation = () => {
+    if (animationRef.current != null) {
+      cancelAnimationFrame(animationRef.current)
+      animationRef.current = null
     }
-    return () => { if (interval) clearInterval(interval) }
-  }, [routeActive])
+    lastFrameRef.current = null
+    segmentRef.current = 0
+    progressRef.current = 0
+  }
 
   useEffect(() => {
     if (!routeActive) return
     const interval = setInterval(() => {
-      setPosition((prev) => {
-        const newPos = {
-          lat: prev.lat + (Math.random() - 0.5) * 0.001,
-          lng: prev.lng + (Math.random() - 0.5) * 0.001,
-        }
-        setRoutePoints((points) => [...points.slice(-50), newPos])
-        return newPos
-      })
-    }, 3000)
+      setElapsed((e) => e + 1)
+    }, 1000)
     return () => clearInterval(interval)
   }, [routeActive])
+
+  useEffect(() => {
+    if (!routeActive) return
+
+    const animate = (timestamp: number) => {
+      if (lastFrameRef.current == null) {
+        lastFrameRef.current = timestamp
+      }
+
+      const delta = timestamp - lastFrameRef.current
+      lastFrameRef.current = timestamp
+
+      const segmentDuration = 2000
+      progressRef.current += delta / segmentDuration
+
+      while (progressRef.current >= 1 && segmentRef.current < ROUTE_PATH.length - 2) {
+        progressRef.current = 0
+        segmentRef.current += 1
+        const nextPoint = ROUTE_PATH[segmentRef.current]
+        setRoutePoints((points) => [...points.slice(-24), { lat: nextPoint[0], lng: nextPoint[1] }])
+      }
+
+      const from = ROUTE_PATH[segmentRef.current]
+      const to = ROUTE_PATH[Math.min(segmentRef.current + 1, ROUTE_PATH.length - 1)]
+      const p = Math.min(progressRef.current, 1)
+      const eased = 1 - Math.pow(1 - p, 3)
+      const nextPosition = {
+        lat: from[0] + (to[0] - from[0]) * eased,
+        lng: from[1] + (to[1] - from[1]) * eased,
+      }
+
+      setPosition(nextPosition)
+      animationRef.current = requestAnimationFrame(animate)
+    }
+
+    animationRef.current = requestAnimationFrame(animate)
+    return resetAnimation
+  }, [routeActive])
+
+  useEffect(() => {
+    return () => resetAnimation()
+  }, [])
 
   const formatTime = (seconds: number) => {
     const h = Math.floor(seconds / 3600)
@@ -51,14 +101,17 @@ export default function DriverPage() {
   }
 
   const startRoute = () => {
+    resetAnimation()
     setRouteActive(true)
     setElapsed(0)
-    setRoutePoints([INITIAL_POSITION])
+    setPosition(INITIAL_POSITION)
+    setRoutePoints([{ lat: INITIAL_POSITION.lat, lng: INITIAL_POSITION.lng }])
     toast.success("Ruta iniciada", { description: "Compartiendo ubicación en tiempo real" })
   }
 
   const endRoute = () => {
     setRouteActive(false)
+    resetAnimation()
     toast.success("Ruta finalizada", { description: `Duración: ${formatTime(elapsed)}` })
   }
 
@@ -112,6 +165,20 @@ export default function DriverPage() {
               trucks={[{ id: "my-truck", name: "Mi Camión", ...position, status: "on_route" }]}
               center={[position.lat, position.lng]}
               zoom={15}
+              routePaths={[
+                ...(routePoints.length > 1 ? [{
+                  id: "driver-route-history",
+                  points: routePoints.map((p) => [p.lat, p.lng] as [number, number]),
+                  color: "#38BDF8",
+                  label: "Recorrido",
+                }] : []),
+                {
+                  id: "driver-route",
+                  points: ROUTE_PATH,
+                  color: "#22C55E",
+                  label: "Ruta sugerida",
+                },
+              ]}
             />
           </div>
         </CardContent>

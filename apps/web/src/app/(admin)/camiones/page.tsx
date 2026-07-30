@@ -3,53 +3,67 @@
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Plus } from "lucide-react"
-
-const TRUCKS = [
-  { id: "CAM-001", name: "Camión 1", plate: "ABC-123", driver: "Carlos M.", sector: "Zona Colonial", status: "on_route" },
-  { id: "CAM-002", name: "Camión 2", plate: "DEF-456", driver: "María P.", sector: "Piantini", status: "on_route" },
-  { id: "CAM-003", name: "Camión 3", plate: "GHI-789", driver: "Pedro R.", sector: "Los Prados", status: "available" },
-  { id: "CAM-004", name: "Camión 4", plate: "JKL-012", driver: "Ana L.", sector: "Ens. Ozama", status: "maintenance" },
-  { id: "CAM-005", name: "Camión 5", plate: "MNO-345", driver: "Luis F.", sector: "Villa Consuelo", status: "available" },
-]
+import { Plus, Fuel, Gauge, Clock3, MapPin, ShieldCheck } from "lucide-react"
+import { trucks } from "@/lib/al100-data"
 
 export default function TrucksPage() {
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
           <h1 className="text-2xl font-heading font-bold">Camiones</h1>
-          <p className="text-muted-foreground">Gestión de flota de recolección</p>
+          <p className="text-muted-foreground">Gestión de flota con estado, consumo y ruta asignada</p>
         </div>
         <Button className="bg-accent hover:bg-accent/90">
           <Plus className="w-4 h-4 mr-2" /> Añadir Camión
         </Button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {TRUCKS.map((t) => (
-          <Card key={t.id}>
-            <CardContent className="p-4 space-y-3">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {trucks.map((truck) => (
+          <Card key={truck.id} className="overflow-hidden">
+            <div className="h-1" style={{ backgroundColor: truck.routeColor }} />
+            <CardContent className="space-y-4 p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className={`w-2.5 h-2.5 rounded-full ${
-                    t.status === "on_route" ? "bg-accent animate-pulse" :
-                    t.status === "maintenance" ? "bg-yellow-500" : "bg-green-500"
-                  }`} />
-                  <p className="font-medium">{t.name}</p>
+                  <div
+                    className={`w-2.5 h-2.5 rounded-full ${
+                      truck.status === "on_route"
+                        ? "bg-accent animate-pulse"
+                        : truck.status === "maintenance"
+                          ? "bg-yellow-500"
+                          : "bg-green-500"
+                    }`}
+                  />
+                  <p className="font-medium">{truck.name}</p>
                 </div>
-                <Badge variant="outline" className="text-[10px]">{t.id}</Badge>
+                <Badge variant="outline" className="text-[10px]">
+                  {truck.id}
+                </Badge>
               </div>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <div><span className="text-muted-foreground">Placa:</span> {t.plate}</div>
-                <div><span className="text-muted-foreground">Chofer:</span> {t.driver}</div>
-                <div><span className="text-muted-foreground">Sector:</span> {t.sector}</div>
-                <div>
-                  <Badge variant={t.status === "on_route" ? "default" : "secondary"}
-                    className={t.status === "on_route" ? "bg-accent/20 text-accent text-[10px]" : "text-[10px]"}>
-                    {t.status === "on_route" ? "En ruta" : t.status === "maintenance" ? "Mantenimiento" : "Disponible"}
-                  </Badge>
+
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                <div><span className="text-muted-foreground">Placa:</span> {truck.plate}</div>
+                <div><span className="text-muted-foreground">Chofer:</span> {truck.driver}</div>
+                <div><span className="text-muted-foreground">Sector:</span> {truck.sector}</div>
+                <div><span className="text-muted-foreground">Ruta:</span> {truck.routeName}</div>
+                <div className="flex items-center gap-1"><Fuel className="h-3 w-3 text-muted-foreground" /> {truck.fuel}% combustible</div>
+                <div className="flex items-center gap-1"><Gauge className="h-3 w-3 text-muted-foreground" /> {truck.speed} km/h</div>
+                <div className="flex items-center gap-1"><Clock3 className="h-3 w-3 text-muted-foreground" /> {truck.lastGps}</div>
+                <div className="flex items-center gap-1"><MapPin className="h-3 w-3 text-muted-foreground" /> Carga {truck.load}%</div>
+              </div>
+
+              <div className="flex items-center justify-between rounded-lg border border-border/60 bg-muted/15 p-3">
+                <div className="text-xs text-muted-foreground">
+                  <p>Estado operativo</p>
+                  <p className="text-foreground">
+                    {truck.status === "on_route" ? "En ruta" : truck.status === "maintenance" ? "Mantenimiento" : "Disponible"}
+                  </p>
                 </div>
+                <Badge className={truck.status === "on_route" ? "bg-accent/20 text-accent" : ""} variant={truck.status === "on_route" ? "default" : "secondary"}>
+                  <ShieldCheck className="mr-1 h-3 w-3" />
+                  {truck.status === "on_route" ? "Activo" : "Listo"}
+                </Badge>
               </div>
             </CardContent>
           </Card>
