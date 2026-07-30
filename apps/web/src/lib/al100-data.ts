@@ -174,6 +174,20 @@ export const sectors: SectorRecord[] = [
     reason: "Alta densidad poblacional y actividad comercial generan volumen constante.",
     factors: ["alta densidad", "comercio", "tráfico pesado"],
   },
+  {
+    id: "S-008",
+    code: "SDN-008",
+    name: "Santo Domingo Norte",
+    density: "Alta",
+    trucks: 2,
+    currentVolume: 3800,
+    predictedVolume: 4180,
+    trend: "up",
+    pct: 10,
+    freq: "Lun-Sáb · 6:00 AM",
+    reason: "Zona de crecimiento urbano continuo con alta densidad poblacional.",
+    factors: ["crecimiento urbano", "alta densidad", "comercio diverso"],
+  },
 ]
 
 export const trucks: TruckRecord[] = [
@@ -365,6 +379,7 @@ export const sectorSchedules: Record<string, { sector: string; days: string; tim
   "Villa Consuelo": { sector: "Villa Consuelo", days: "Mar, Jue, Sáb", time: "8:45 AM" },
   "Sabana Perdida": { sector: "Sabana Perdida", days: "Lun, Mié, Vie", time: "7:00 AM" },
   "Los Guaricanos": { sector: "Los Guaricanos", days: "Mar, Jue, Sáb", time: "6:30 AM" },
+  "Santo Domingo Norte": { sector: "Santo Domingo Norte", days: "Lun-Sáb", time: "6:00 AM" },
 }
 
 const defaultIncidents: IncidentRecord[] = [
@@ -525,6 +540,7 @@ export function guessSectorFromLocation(lat: number, lng: number) {
   if (lat >= 18.499 && lat <= 18.512 && lng >= -69.891 && lng <= -69.879) return "Villa Consuelo"
   if (lat >= 18.53 && lat <= 18.57 && lng >= -69.88 && lng <= -69.84) return "Sabana Perdida"
   if (lat >= 18.52 && lat <= 18.56 && lng >= -69.95 && lng <= -69.91) return "Los Guaricanos"
+  if (lat >= 18.50 && lat <= 18.60 && lng >= -69.97 && lng <= -69.83) return "Santo Domingo Norte"
   return "Desconocido"
 }
 

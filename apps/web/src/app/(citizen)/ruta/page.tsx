@@ -30,6 +30,7 @@ const SECTOR_CENTERS: Record<string, [number, number]> = {
   "Villa Consuelo": [18.505, -69.885],
   "Sabana Perdida": [18.545, -69.863],
   "Los Guaricanos": [18.542, -69.933],
+  "Santo Domingo Norte": [18.55, -69.90],
 }
 
 const buildRoutePath = (sector: string) => {
