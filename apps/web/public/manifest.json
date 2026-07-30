@@ -1,0 +1,10 @@
+{
+  "name": "AL100 - Recolección Inteligente",
+  "short_name": "AL100",
+  "description": "Plataforma inteligente de recolección de residuos urbanos",
+  "start_url": "/login",
+  "display": "standalone",
+  "background_color": "#0F172A",
+  "theme_color": "#0F172A",
+  "icons": []
+}
