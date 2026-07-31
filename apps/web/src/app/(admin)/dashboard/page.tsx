@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { StatsCard } from "@/components/admin/StatsCard"
 import { Truck, Route, AlertTriangle, Trash2, TrendingUp, TrendingDown, Fuel, Gauge, Clock3 } from "lucide-react"
-import { getIncidents, incidents as seedIncidents, routes, trucks } from "@/lib/al100-data"
+import { getIncidents, incidents as seedIncidents, routes, trucks, getStreetRoute } from "@/lib/al100-data"
 
 const TruckMap = dynamic(() => import("@/components/map/TruckMap"), { ssr: false })
 
@@ -74,11 +74,7 @@ export default function AdminDashboard() {
                   id: route.id,
                   color: route.color || ["#22C55E", "#38BDF8", "#A78BFA", "#F97316", "#F43F5E"][index % 5],
                   label: route.sector,
-                  points: [
-                    [18.486 + index * 0.001, -69.889 - index * 0.001],
-                    [18.488 + index * 0.001, -69.886 - index * 0.001],
-                    [18.49 + index * 0.001, -69.883 - index * 0.001],
-                  ],
+                  points: getStreetRoute(route.sector),
                 }))}
                 center={[18.486, -69.889]}
                 zoom={12}
