@@ -1,13 +1,13 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useTheme } from "next-themes"
 import dynamic from "next/dynamic"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Truck, Clock, MapPin, RefreshCw, LocateFixed, AlertTriangle } from "lucide-react"
+import { Truck, Clock, MapPin, RefreshCw, LocateFixed, AlertTriangle, Radio, CheckCheck } from "lucide-react"
 import { guessSectorFromLocation, normalizeSectorSchedule, sectorSchedules, sectors, reportDelay, estimateTruckArrival, getStreetRoute } from "@/lib/al100-data"
 import { fetchStreetRoute } from "@/lib/routing"
 import { toast } from "sonner"
@@ -45,6 +45,9 @@ export default function CitizenRoutePage() {
   const [locationError, setLocationError] = useState("")
   const [location, setLocation] = useState<[number, number]>([18.4866, -69.8894])
   const [streetRoute, setStreetRoute] = useState<[number, number][]>(getStreetRoute("Zona Colonial"))
+  const [gpsTransmitting, setGpsTransmitting] = useState(false)
+  const [lastCheckin, setLastCheckin] = useState<string | null>(null)
+  const watchRef = useRef<number | null>(null)
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -100,7 +103,55 @@ export default function CitizenRoutePage() {
     )
   }
 
-  const handleReportDelay = () => {
+  const handleToggleGpsTransmission = () => {
+    if (gpsTransmitting) {
+      if (watchRef.current != null) {
+        navigator.geolocation.clearWatch(watchRef.current)
+        watchRef.current = null
+      }
+      setGpsTransmitting(false)
+      toast.info("Transmisión GPS desactivada")
+      return
+    }
+
+    if (!navigator.geolocation) {
+      toast.error("Tu navegador no soporta geolocalización")
+      return
+    }
+
+    const id = navigator.geolocation.watchPosition(
+      (pos) => {
+        const lat = Number(pos.coords.latitude.toFixed(5))
+        const lng = Number(pos.coords.longitude.toFixed(5))
+        setTruck((prev) => ({
+          ...prev,
+          lat,
+          lng,
+          lastUpdate: "hace unos segundos",
+        }))
+        const detected = guessSectorFromLocation(lat, lng)
+        if (detected !== "Desconocido") setSector(detected)
+      },
+      () => {
+        toast.error("Error en transmisión GPS")
+        setGpsTransmitting(false)
+      },
+      { enableHighAccuracy: true, timeout: 5000, maximumAge: 1000 }
+    )
+    watchRef.current = id
+    setGpsTransmitting(true)
+    toast.success("Transmitiendo ubicación en tiempo real")
+  }
+
+  const handleCitizenCheckin = () => {
+    const now = new Date().toLocaleTimeString("es-DO", { hour: "2-digit", minute: "2-digit" })
+    setLastCheckin(now)
+    toast.success("¡Confirmación registrada!", {
+      description: `Paso del camión confirmado en ${sector} a las ${now}.`,
+    })
+  }
+
+  const handleReportDelayWithCheckin = () => {
     const arrival = estimateTruckArrival(sector)
     reportDelay({
       sector,
@@ -227,7 +278,7 @@ export default function CitizenRoutePage() {
               </p>
             </div>
           </div>
-          <Button variant="outline" size="sm" className="gap-2 border-destructive/50 text-destructive hover:bg-destructive/10" onClick={handleReportDelay}>
+          <Button variant="outline" size="sm" className="gap-2 border-destructive/50 text-destructive hover:bg-destructive/10" onClick={handleReportDelayWithCheckin}>
             <AlertTriangle className="w-4 h-4" /> Reportar Retraso
           </Button>
         </CardContent>
@@ -235,7 +286,13 @@ export default function CitizenRoutePage() {
 
       <Card className="overflow-hidden">
         <CardContent className="p-0">
-          <div className="h-[500px] w-full">
+          <div className="relative">
+            <div className="absolute top-3 left-3 z-[1000]">
+              <Badge className="bg-accent/90 text-white text-[10px] gap-1 backdrop-blur-sm shadow-lg">
+                <Radio className="w-3 h-3" /> Ruta Colaborativa Ciudadana (Crowdsourced GPS)
+              </Badge>
+            </div>
+            <div className="h-[500px] w-full">
             <TruckMap
               trucks={[{ ...truck, lat: truck.lat, lng: truck.lng }]}
               center={[truck.lat, truck.lng]}
@@ -251,8 +308,54 @@ export default function CitizenRoutePage() {
               ]}
             />
           </div>
+          </div>
         </CardContent>
       </Card>
+
+      <div className="grid gap-3 md:grid-cols-2">
+        <Card>
+          <CardContent className="p-4">
+            <Button
+              variant={gpsTransmitting ? "default" : "outline"}
+              size="lg"
+              className={`w-full gap-3 h-12 text-base ${gpsTransmitting ? "bg-accent animate-pulse" : ""}`}
+              onClick={handleToggleGpsTransmission}
+            >
+              <Radio className={`w-5 h-5 ${gpsTransmitting ? "animate-pulse" : ""}`} />
+              {gpsTransmitting ? "Desactivar transmisión GPS" : "Activar transmisión GPS del Camión"}
+            </Button>
+            <p className="text-xs text-muted-foreground mt-2 text-center">
+              {gpsTransmitting
+                ? "Transmitiendo ubicación en tiempo real desde tu dispositivo"
+                : "Activa para compartir tu ubicación como conductor"}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <Button
+              variant="outline"
+              size="lg"
+              className="w-full gap-3 h-12 text-base"
+              onClick={handleCitizenCheckin}
+            >
+              <CheckCheck className="w-5 h-5 text-accent" />
+              Confirmar paso del camión aquí
+            </Button>
+            {lastCheckin && (
+              <p className="text-xs text-accent mt-2 text-center">
+                Última confirmación en {sector}: {lastCheckin} (vía reporte ciudadano)
+              </p>
+            )}
+            {!lastCheckin && (
+              <p className="text-xs text-muted-foreground mt-2 text-center">
+                Confirma cuando el camión pase por tu zona
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
       <Card>
         <CardHeader>

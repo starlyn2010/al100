@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { AlertTriangle, CheckCircle2, Camera, MapPin, Loader2, Trash2, X } from "lucide-react"
+import { AlertTriangle, CheckCircle2, Camera, MapPin, Loader2, Trash2, X, MessageCircle, Store } from "lucide-react"
 import { toast } from "sonner"
 import { guessSectorFromLocation, saveIncident, seedNotificationFromIncident, updateContainerFill, type IncidentType, sectors } from "@/lib/al100-data"
 
@@ -36,6 +36,11 @@ export default function CitizenReportPage() {
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null)
   const [locationLoading, setLocationLoading] = useState(false)
   const [locationError, setLocationError] = useState("")
+  const [informalCommerce, setInformalCommerce] = useState(false)
+
+  const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(
+    `Hola equipo AL100, quiero reportar una incidencia de basura en mi zona.${selectedSector ? ` Sector: ${selectedSector}.` : ""}${description ? ` ${description}` : ""}`
+  )}`
 
   const handlePhotoCapture = () => {
     fileInputRef.current?.click()
@@ -144,12 +149,46 @@ export default function CitizenReportPage() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
+      <div className="grid gap-3 grid-cols-3">
+        <div className="p-3 rounded-xl border border-border/70 bg-card">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Estatus del Sector</p>
+          <p className="text-sm font-bold mt-1 flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
+            Flujo Normal
+          </p>
+        </div>
+        <div className="p-3 rounded-xl border border-border/70 bg-card">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Eficiencia Recolección</p>
+          <p className="text-sm font-bold mt-1 text-accent">88%</p>
+        </div>
+        <div className="p-3 rounded-xl border border-border/70 bg-card">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Tiempo Respuesta</p>
+          <p className="text-sm font-bold mt-1 text-yellow-500">18 hrs</p>
+        </div>
+      </div>
+      <p className="text-[10px] text-muted-foreground text-center -mt-4">
+        Sello AL100: Integrando comercios y escuelas para una ciudad limpia.
+      </p>
       <div>
         <h1 className="text-2xl font-heading font-bold">Reportar Incidencia</h1>
         <p className="text-muted-foreground">Ayúdanos a mejorar la recolección en tu sector</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        <a
+          href={whatsappUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-3 p-4 rounded-xl border border-emerald-600/30 bg-emerald-600/10 hover:bg-emerald-600/20 transition-colors no-underline"
+        >
+          <div className="p-2 bg-emerald-600 rounded-full shrink-0">
+            <MessageCircle className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <p className="font-medium text-emerald-600 dark:text-emerald-400">¿Prefieres reporte rápido?</p>
+            <p className="text-sm text-muted-foreground">Notifica vía WhatsApp — tu ubicación se envía automáticamente</p>
+          </div>
+        </a>
         <Card>
           <CardHeader>
             <CardTitle className="text-sm font-medium text-muted-foreground">Tipo de Incidencia</CardTitle>
@@ -254,6 +293,24 @@ export default function CitizenReportPage() {
                 {location ? "Ubicación Guardada" : "Ubicación Actual"}
               </Button>
             </div>
+
+            <label className="flex items-start gap-3 p-3 rounded-xl border border-border/70 cursor-pointer hover:bg-muted/20 transition-colors">
+              <input
+                type="checkbox"
+                checked={informalCommerce}
+                onChange={(e) => setInformalCommerce(e.target.checked)}
+                className="mt-0.5 w-4 h-4 rounded border-border text-accent accent-accent"
+              />
+              <div>
+                <p className="text-sm font-medium flex items-center gap-1.5">
+                  <Store className="w-4 h-4 text-muted-foreground" />
+                  Involucra zona de comercio informal o vendedores ambulantes
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Esto ayuda a coordinar soluciones con los comercios locales.
+                </p>
+              </div>
+            </label>
 
             {photo && (
               <div className="relative rounded-xl overflow-hidden border border-border/70">
