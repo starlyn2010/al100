@@ -9,22 +9,13 @@ import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
 import { Play, Square, MapPin, Signal, Clock, ChevronRight, Trash2 } from "lucide-react"
 import { toast } from "sonner"
-import { updateContainerFill, getContainersBySector, type ContainerRecord } from "@/lib/al100-data"
+import { updateContainerFill, getContainersBySector, getStreetRoute, type ContainerRecord } from "@/lib/al100-data"
+import { fetchStreetRoute } from "@/lib/routing"
 
 const TruckMap = dynamic(() => import("@/components/map/TruckMap"), { ssr: false })
 
-const INITIAL_POSITION = { lat: 18.486, lng: -69.889 }
-const ROUTE_PATH: [number, number][] = [
-  [18.486, -69.889],
-  [18.487, -69.8878],
-  [18.4884, -69.8866],
-  [18.4894, -69.8848],
-  [18.4888, -69.8828],
-  [18.4874, -69.8818],
-  [18.4862, -69.8834],
-  [18.4856, -69.8858],
-  [18.4858, -69.8884],
-]
+const INITIAL_POSITION = { lat: 18.4866, lng: -69.8894 }
+const ROUTE_PATH: [number, number][] = getStreetRoute("Zona Colonial")
 
 export default function DriverPage() {
   const { resolvedTheme } = useTheme()
@@ -38,8 +29,23 @@ export default function DriverPage() {
   const [containerFill, setContainerFill] = useState(50)
   const [showContainerPanel, setShowContainerPanel] = useState(false)
 
+  const [routePath, setRoutePath] = useState<[number, number][]>(ROUTE_PATH)
+  const routePathRef = useRef(ROUTE_PATH)
+
   useEffect(() => {
     setContainers(getContainersBySector("Zona Colonial"))
+  }, [])
+
+  useEffect(() => {
+    const loadRoute = async () => {
+      const live = await fetchStreetRoute(ROUTE_PATH)
+      if (live && live.points.length > 2) {
+        setRoutePath(live.points)
+        routePathRef.current = live.points
+        toast.success("Ruta cargada desde OpenStreetMap", { description: `${Math.round(live.distance / 1000 * 10) / 10} km · ${Math.round(live.duration / 60)} min` })
+      }
+    }
+    loadRoute()
   }, [])
   const animationRef = useRef<number | null>(null)
   const lastFrameRef = useRef<number | null>(null)
@@ -78,15 +84,15 @@ export default function DriverPage() {
       const segmentDuration = 2000
       progressRef.current += delta / segmentDuration
 
-      while (progressRef.current >= 1 && segmentRef.current < ROUTE_PATH.length - 2) {
+      while (progressRef.current >= 1 && segmentRef.current < routePathRef.current.length - 2) {
         progressRef.current = 0
         segmentRef.current += 1
-        const nextPoint = ROUTE_PATH[segmentRef.current]
+        const nextPoint = routePathRef.current[segmentRef.current]
         setRoutePoints((points) => [...points.slice(-24), { lat: nextPoint[0], lng: nextPoint[1] }])
       }
 
-      const from = ROUTE_PATH[segmentRef.current]
-      const to = ROUTE_PATH[Math.min(segmentRef.current + 1, ROUTE_PATH.length - 1)]
+      const from = routePathRef.current[segmentRef.current]
+      const to = routePathRef.current[Math.min(segmentRef.current + 1, routePathRef.current.length - 1)]
       const p = Math.min(progressRef.current, 1)
       const eased = 1 - Math.pow(1 - p, 3)
       const nextPosition = {
@@ -188,7 +194,7 @@ export default function DriverPage() {
                 }] : []),
                 {
                   id: "driver-route",
-                  points: ROUTE_PATH,
+                  points: routePath,
                   color: "#22C55E",
                   label: "Ruta sugerida",
                 },

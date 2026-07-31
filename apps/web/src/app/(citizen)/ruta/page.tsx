@@ -8,7 +8,8 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Truck, Clock, MapPin, RefreshCw, LocateFixed, AlertTriangle } from "lucide-react"
-import { guessSectorFromLocation, normalizeSectorSchedule, sectorSchedules, sectors, reportDelay, estimateTruckArrival } from "@/lib/al100-data"
+import { guessSectorFromLocation, normalizeSectorSchedule, sectorSchedules, sectors, reportDelay, estimateTruckArrival, getStreetRoute } from "@/lib/al100-data"
+import { fetchStreetRoute } from "@/lib/routing"
 import { toast } from "sonner"
 
 const TruckMap = dynamic(() => import("@/components/map/TruckMap"), { ssr: false })
@@ -16,8 +17,8 @@ const TruckMap = dynamic(() => import("@/components/map/TruckMap"), { ssr: false
 const MOCK_TRUCK = {
   id: "CAM-001",
   name: "Camión 1",
-  lat: 18.486,
-  lng: -69.889,
+  lat: 18.4866,
+  lng: -69.8894,
   status: "on_route",
   lastUpdate: "hace 2 min",
   nextPass: "en 15 min",
@@ -25,25 +26,14 @@ const MOCK_TRUCK = {
 }
 
 const SECTOR_CENTERS: Record<string, [number, number]> = {
-  "Zona Colonial": [18.486, -69.889],
-  Piantini: [18.476, -69.918],
-  "Los Prados": [18.495, -69.87],
-  "Ensanche Ozama": [18.46, -69.9],
-  "Villa Consuelo": [18.505, -69.885],
-  "Sabana Perdida": [18.545, -69.863],
-  "Los Guaricanos": [18.542, -69.933],
-  "Santo Domingo Norte": [18.55, -69.90],
-}
-
-const buildRoutePath = (sector: string) => {
-  const center = SECTOR_CENTERS[sector] || SECTOR_CENTERS["Zona Colonial"]
-  return [
-    [center[0] - 0.0025, center[1] - 0.003],
-    [center[0] - 0.0012, center[1] - 0.001],
-    [center[0], center[1]],
-    [center[0] + 0.0012, center[1] + 0.0014],
-    [center[0] + 0.0025, center[1] + 0.001],
-  ] as [number, number][]
+  "Zona Colonial": [18.4866, -69.8894],
+  Piantini: [18.4760, -69.9180],
+  "Los Prados": [18.4950, -69.8730],
+  "Ensanche Ozama": [18.4590, -69.9010],
+  "Villa Consuelo": [18.5050, -69.8860],
+  "Sabana Perdida": [18.5450, -69.8630],
+  "Los Guaricanos": [18.5420, -69.9330],
+  "Santo Domingo Norte": [18.5500, -69.9000],
 }
 
 export default function CitizenRoutePage() {
@@ -53,7 +43,8 @@ export default function CitizenRoutePage() {
   const [sector, setSector] = useState(MOCK_TRUCK.sector)
   const [locationLoading, setLocationLoading] = useState(false)
   const [locationError, setLocationError] = useState("")
-  const [location, setLocation] = useState<[number, number]>([18.486, -69.889])
+  const [location, setLocation] = useState<[number, number]>([18.4866, -69.8894])
+  const [streetRoute, setStreetRoute] = useState<[number, number][]>(getStreetRoute("Zona Colonial"))
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -68,6 +59,18 @@ export default function CitizenRoutePage() {
       })
     }, 3000)
     return () => clearInterval(interval)
+  }, [sector])
+
+  useEffect(() => {
+    const loadRoute = async () => {
+      const hardcoded = getStreetRoute(sector)
+      setStreetRoute(hardcoded)
+      const live = await fetchStreetRoute(hardcoded)
+      if (live && live.points.length > 2) {
+        setStreetRoute(live.points)
+      }
+    }
+    loadRoute()
   }, [sector])
 
   const handleLocateSector = () => {
@@ -241,7 +244,7 @@ export default function CitizenRoutePage() {
               routePaths={[
                 {
                   id: `route-${sector}`,
-                  points: buildRoutePath(sector),
+                  points: streetRoute,
                   color: "#22C55E",
                   label: sector,
                 },
