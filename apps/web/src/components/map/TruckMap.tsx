@@ -43,6 +43,16 @@ const startIcon = (color: string, isDark: boolean) => L.divIcon({
   iconAnchor: [14, 28],
 })
 
+const startIcon = (color: string, isDark: boolean) => L.divIcon({
+  className: "",
+  html: `<div style="position:relative;width:28px;height:30px;">
+    <div style="position:absolute;top:0;left:50%;transform:translateX(-50%);border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:13px solid ${color};filter:drop-shadow(0 1px 2px rgba(0,0,0,0.35));"></div>
+    <div style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:11px;height:11px;background:${color};border-radius:50%;border:2px solid ${isDark ? "#0F172A" : "#FFFFFF"};"></div>
+  </div>`,
+  iconSize: [28, 30],
+  iconAnchor: [14, 28],
+})
+
 function closestPointOnRoutes(
   lat: number,
   lng: number,
@@ -96,8 +106,6 @@ export default function TruckMap({
     }
   })
 
-  const startMarkers = routePaths.filter((route) => route.points.length > 0)
-
   return (
     <MapContainer
       center={center}
@@ -121,25 +129,6 @@ export default function TruckMap({
             dashArray: route.id === "driver-route-history" ? undefined : "6 6",
           }}
         />
-      ))}
-      {startMarkers.map((route) => (
-        <Marker
-          key={`start-${route.id}`}
-          position={route.points[0]}
-          icon={startIcon(route.color || "#22C55E", dark)}
-        >
-          <Popup>
-            <div className="text-sm">
-              <strong>Inicio de ruta</strong>
-              {route.label && (
-                <>
-                  <br />
-                  <span className="text-gray-500">{route.label}</span>
-                </>
-              )}
-            </div>
-          </Popup>
-        </Marker>
       ))}
       {trucks.map((truck) => {
         const snapped = closestPointOnRoutes(truck.lat, truck.lng, routePaths)
