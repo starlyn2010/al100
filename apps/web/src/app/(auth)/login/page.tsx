@@ -15,12 +15,21 @@ const DEMO_USERS = [
   { code: "CIUDADANO", name: "Juan Pérez", role: "citizen" as const },
 ]
 
+const ADMIN_KEY = "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4"
+
+async function verifyKey(pass: string): Promise<boolean> {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(pass))
+  const hex = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("")
+  return hex === ADMIN_KEY
+}
+
 export default function LoginPage() {
   const [code, setCode] = useState("")
+  const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const router = useRouter()
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
 
@@ -28,6 +37,18 @@ export default function LoginPage() {
     if (!user) {
       setError("Código inválido. Prueba: ADMIN, CHOFER01, o CIUDADANO")
       return
+    }
+
+    if (user.role === "admin") {
+      if (!password) {
+        setError("Ingresa la contraseña de administrador")
+        return
+      }
+      const ok = await verifyKey(password)
+      if (!ok) {
+        setError("Contraseña incorrecta")
+        return
+      }
     }
 
     localStorage.setItem("al100_user", JSON.stringify(user))
@@ -72,6 +93,20 @@ export default function LoginPage() {
                 autoFocus
               />
             </div>
+
+            {code.toUpperCase() === "ADMIN" && (
+              <div className="space-y-2">
+                <Label htmlFor="password">Contraseña</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="h-11 text-center text-lg font-mono tracking-widest"
+                />
+              </div>
+            )}
 
             {error && (
               <p className="text-sm text-destructive text-center">{error}</p>

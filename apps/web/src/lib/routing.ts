@@ -1,4 +1,5 @@
 const OSRM_BASE = "https://router.project-osrm.org/route/v1/driving"
+const OSRM_NEAREST = "https://router.project-osrm.org/nearest/v1/driving"
 
 export interface RouteResult {
   points: [number, number][]
@@ -18,18 +19,39 @@ function haversine(a: [number, number], b: [number, number]): number {
   return 2 * R * Math.asin(Math.sqrt(h))
 }
 
+export async function snapToStreets(
+  waypoints: [number, number][]
+): Promise<[number, number][]> {
+  const snapped: [number, number][] = []
+  for (const [lat, lng] of waypoints) {
+    try {
+      const res = await fetch(`${OSRM_NEAREST}/${lng},${lat}?number=1`)
+      if (!res.ok) continue
+      const data = await res.json()
+      const loc = data?.waypoints?.[0]?.location
+      if (loc) snapped.push([loc[1], loc[0]])
+      else snapped.push([lat, lng])
+    } catch {
+      snapped.push([lat, lng])
+    }
+  }
+  return snapped.length >= 2 ? snapped : waypoints
+}
+
 export async function fetchStreetRoute(
   waypoints: [number, number][]
 ): Promise<RouteResult | null> {
   if (waypoints.length < 2) return null
 
-  const coords = waypoints
+  const snapped = await snapToStreets(waypoints)
+
+  const coords = snapped
     .map(([lat, lng]) => `${lng},${lat}`)
     .join(";")
 
-  const directDistance = waypoints
+  const directDistance = snapped
     .slice(1)
-    .reduce((sum, point, i) => sum + haversine(waypoints[i], point), 0)
+    .reduce((sum, point, i) => sum + haversine(snapped[i], point), 0)
 
   try {
     const res = await fetch(
@@ -45,7 +67,11 @@ export async function fetchStreetRoute(
 
     const routeDistance = route.distance as number
     if (routeDistance > directDistance * 4) {
-      return null
+      return {
+        points: snapped,
+        distance: Math.round(directDistance),
+        duration: Math.round(directDistance / 4),
+      }
     }
 
     return {
@@ -54,7 +80,11 @@ export async function fetchStreetRoute(
       duration: Math.round(route.duration),
     }
   } catch {
-    return null
+    return {
+      points: snapped,
+      distance: Math.round(directDistance),
+      duration: Math.round(directDistance / 4),
+    }
   }
 }
 
