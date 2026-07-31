@@ -1,4 +1,4 @@
-const OSRM_BASE = "http://router.project-osrm.org/route/v1/driving"
+const OSRM_BASE = "https://router.project-osrm.org/route/v1/driving"
 
 export interface RouteResult {
   points: [number, number][]
