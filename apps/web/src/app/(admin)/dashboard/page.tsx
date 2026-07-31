@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { StatsCard } from "@/components/admin/StatsCard"
 import { Truck, Route, AlertTriangle, Trash2, TrendingUp, TrendingDown, Fuel, Gauge, Clock3 } from "lucide-react"
 import { getIncidents, incidents as seedIncidents, routes, trucks, getStreetRoute } from "@/lib/al100-data"
+import { fetchStreetRoute } from "@/lib/routing"
 
 const TruckMap = dynamic(() => import("@/components/map/TruckMap"), { ssr: false })
 
@@ -15,6 +16,36 @@ export default function AdminDashboard() {
   const { resolvedTheme } = useTheme()
   const isDark = resolvedTheme === "dark"
   const [liveIncidents, setLiveIncidents] = useState(seedIncidents)
+  const [routePaths, setRoutePaths] = useState(
+    routes.map((route, index) => ({
+      id: route.id,
+      color: route.color || ["#22C55E", "#38BDF8", "#A78BFA", "#F97316", "#F43F5E"][index % 5],
+      label: route.sector,
+      points: getStreetRoute(route.sector),
+    }))
+  )
+
+  useEffect(() => {
+    let cancelled = false
+    const loadRoutes = async () => {
+      const updated = await Promise.all(
+        routes.map(async (route, index) => {
+          const hardcoded = getStreetRoute(route.sector)
+          const live = await fetchStreetRoute(hardcoded)
+          if (cancelled) return null
+          return {
+            id: route.id,
+            color: route.color || ["#22C55E", "#38BDF8", "#A78BFA", "#F97316", "#F43F5E"][index % 5],
+            label: route.sector,
+            points: live && live.points.length > 2 ? live.points : hardcoded,
+          }
+        })
+      )
+      if (!cancelled) setRoutePaths(updated.filter(Boolean) as typeof routePaths)
+    }
+    loadRoutes()
+    return () => { cancelled = true }
+  }, [])
 
   useEffect(() => {
     let active = true
@@ -70,12 +101,7 @@ export default function AdminDashboard() {
                   lng: truck.id === "CAM-001" ? -69.889 : truck.id === "CAM-002" ? -69.92 : truck.id === "CAM-003" ? -69.87 : truck.id === "CAM-004" ? -69.9 : -69.885,
                   status: truck.status,
                 }))}
-                routePaths={routes.map((route, index) => ({
-                  id: route.id,
-                  color: route.color || ["#22C55E", "#38BDF8", "#A78BFA", "#F97316", "#F43F5E"][index % 5],
-                  label: route.sector,
-                  points: getStreetRoute(route.sector),
-                }))}
+                routePaths={routePaths}
                 center={[18.486, -69.889]}
                 zoom={12}
                 dark={isDark}
