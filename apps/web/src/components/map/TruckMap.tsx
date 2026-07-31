@@ -3,7 +3,7 @@
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap, useMapEvents } from "react-leaflet"
 import L from "leaflet"
 import { useEffect, useState } from "react"
-import { mapConfig } from "@/lib/mapbox"
+import { getTileUrl, mapConfig } from "@/lib/mapbox"
 
 interface TruckData {
   id: string
@@ -23,11 +23,12 @@ interface TruckMapProps {
     color?: string
     label?: string
   }>
+  dark?: boolean
 }
 
-const truckIcon = L.divIcon({
+const truckIcon = (isDark: boolean) => L.divIcon({
   className: "",
-  html: `<div style="width:36px;height:36px;background:#22C55E;border-radius:50%;display:flex;align-items:center;justify-content:center;border:3px solid #0F172A;box-shadow:0 0 20px rgba(34,197,94,0.5);"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M5 17H3V6a1 1 0 0 1 1-1h9v12H7"/><path d="M15 17h2v-4l-2-3h-4v7"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg></div>`,
+  html: `<div style="width:36px;height:36px;background:#22C55E;border-radius:50%;display:flex;align-items:center;justify-content:center;border:3px solid ${isDark ? "#0F172A" : "#FFFFFF"};box-shadow:0 0 20px rgba(34,197,94,0.5);"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M5 17H3V6a1 1 0 0 1 1-1h9v12H7"/><path d="M15 17h2v-4l-2-3h-4v7"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg></div>`,
   iconSize: [36, 36],
   iconAnchor: [18, 18],
 })
@@ -54,6 +55,7 @@ export default function TruckMap({
   center = mapConfig.defaultCenter,
   zoom: zoomProp = mapConfig.defaultZoom,
   routePaths = [],
+  dark = true,
 }: TruckMapProps) {
   const [zoom] = useState(() => {
     if (typeof window === "undefined") return zoomProp
@@ -74,7 +76,7 @@ export default function TruckMap({
     >
       <ChangeView center={center} zoom={zoom} />
       <ZoomPersist />
-      <TileLayer url={mapConfig.tileUrl} attribution={mapConfig.attribution} />
+      <TileLayer url={getTileUrl(dark)} attribution={mapConfig.attribution} />
       {routePaths.map((route, idx) => (
         <Polyline
           key={route.id}
@@ -93,7 +95,7 @@ export default function TruckMap({
         <Marker
           key={truck.id}
           position={[truck.lat, truck.lng]}
-          icon={truckIcon}
+          icon={truckIcon(dark)}
         >
           <Popup>
             <div className="text-sm">

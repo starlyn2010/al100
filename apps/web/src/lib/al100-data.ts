@@ -19,6 +19,29 @@ export interface IncidentRecord {
     lat: number
     lng: number
   } | null
+  photo?: string | null
+}
+
+export interface DelayRecord {
+  id: string
+  sector: string
+  truck_id: string
+  reported_by: string
+  reported_at: string
+  expected_time: string
+  delay_minutes: number
+  status: "reported" | "resolved"
+  resolved_at?: string
+}
+
+export interface ContainerRecord {
+  id: string
+  sector: string
+  location: { lat: number; lng: number }
+  fill_level: number
+  last_updated: string
+  status: "normal" | "warning" | "critical"
+  address?: string
 }
 
 export interface NotificationRecord {
@@ -74,6 +97,8 @@ export interface RouteRecord {
 
 const INCIDENTS_KEY = "al100_incidents"
 const NOTIFICATIONS_KEY = "al100_notifications"
+const DELAYS_KEY = "al100_delays"
+const CONTAINERS_KEY = "al100_containers"
 
 export const sectors: SectorRecord[] = [
   {
@@ -409,6 +434,46 @@ const defaultIncidents: IncidentRecord[] = [
 
 export const incidents = defaultIncidents
 
+const defaultDelays: DelayRecord[] = [
+  {
+    id: "DEL-001",
+    sector: "Los Prados",
+    truck_id: "CAM-003",
+    reported_by: "Pedro R.",
+    reported_at: new Date(Date.now() - 3600000).toISOString(),
+    expected_time: "8:30 AM",
+    delay_minutes: 25,
+    status: "resolved",
+    resolved_at: new Date(Date.now() - 3300000).toISOString(),
+  },
+  {
+    id: "DEL-002",
+    sector: "Villa Consuelo",
+    truck_id: "CAM-005",
+    reported_by: "Luis F.",
+    reported_at: new Date(Date.now() - 7200000).toISOString(),
+    expected_time: "10:00 AM",
+    delay_minutes: 15,
+    status: "reported",
+  },
+]
+
+const defaultContainers: ContainerRecord[] = [
+  { id: "CNT-001", sector: "Zona Colonial", location: { lat: 18.483, lng: -69.888 }, fill_level: 88, last_updated: new Date().toISOString(), status: "warning", address: "Calle El Conde esq. Duarte" },
+  { id: "CNT-002", sector: "Zona Colonial", location: { lat: 18.486, lng: -69.891 }, fill_level: 95, last_updated: new Date().toISOString(), status: "critical", address: "Parque Colón" },
+  { id: "CNT-003", sector: "Piantini", location: { lat: 18.474, lng: -69.919 }, fill_level: 72, last_updated: new Date().toISOString(), status: "normal", address: "Av. Winston Churchill esq. Sarasota" },
+  { id: "CNT-004", sector: "Piantini", location: { lat: 18.477, lng: -69.916 }, fill_level: 91, last_updated: new Date().toISOString(), status: "critical", address: "Calle Gustavo Mejía Ricart" },
+  { id: "CNT-005", sector: "Los Prados", location: { lat: 18.494, lng: -69.873 }, fill_level: 50, last_updated: new Date().toISOString(), status: "normal", address: "Calle Cervantes" },
+  { id: "CNT-006", sector: "Ensanche Ozama", location: { lat: 18.459, lng: -69.901 }, fill_level: 82, last_updated: new Date().toISOString(), status: "warning", address: "Av. Ecológica" },
+  { id: "CNT-007", sector: "Villa Consuelo", location: { lat: 18.503, lng: -69.886 }, fill_level: 67, last_updated: new Date().toISOString(), status: "normal", address: "Calle Benito Juárez" },
+  { id: "CNT-008", sector: "Sabana Perdida", location: { lat: 18.545, lng: -69.863 }, fill_level: 78, last_updated: new Date().toISOString(), status: "warning", address: "Av. Sabana Perdida" },
+  { id: "CNT-009", sector: "Los Guaricanos", location: { lat: 18.542, lng: -69.933 }, fill_level: 85, last_updated: new Date().toISOString(), status: "warning", address: "Calle Principal" },
+  { id: "CNT-010", sector: "Santo Domingo Norte", location: { lat: 18.55, lng: -69.90 }, fill_level: 93, last_updated: new Date().toISOString(), status: "critical", address: "Km 12 Autopista Duarte" },
+]
+
+export const delays = defaultDelays
+export const containers = defaultContainers
+
 function hasWindow() {
   return typeof window !== "undefined"
 }
@@ -466,9 +531,10 @@ export async function getIncidents() {
   return data.map((row) => mapIncidentRow(row as Record<string, unknown>))
 }
 
-export async function saveIncident(input: Omit<IncidentRecord, "id" | "created_at" | "status"> & { status?: IncidentStatus }) {
+export async function saveIncident(input: Omit<IncidentRecord, "id" | "created_at" | "status"> & { status?: IncidentStatus; photo?: string | null }) {
   const record: IncidentRecord = {
     ...input,
+    photo: input.photo || null,
     id: `INC-${Date.now()}`,
     status: input.status || "reported",
     created_at: new Date().toISOString(),
@@ -558,4 +624,131 @@ export function storageKeyForInsidents() {
 
 export function storageKeyForNotifications() {
   return NOTIFICATIONS_KEY
+}
+
+export function getDelays() {
+  return readJson<DelayRecord[]>(DELAYS_KEY, defaultDelays)
+}
+
+export function reportDelay(input: Omit<DelayRecord, "id" | "reported_at" | "status">) {
+  const record: DelayRecord = {
+    ...input,
+    id: `DEL-${Date.now()}`,
+    reported_at: new Date().toISOString(),
+    status: "reported",
+  }
+  const current = getDelays()
+  writeJson(DELAYS_KEY, [record, ...current])
+  return record
+}
+
+export function resolveDelay(id: string) {
+  const current = getDelays().map((d) => (d.id === id ? { ...d, status: "resolved" as const, resolved_at: new Date().toISOString() } : d))
+  writeJson(DELAYS_KEY, current)
+}
+
+export function getContainers() {
+  return readJson<ContainerRecord[]>(CONTAINERS_KEY, defaultContainers)
+}
+
+export function updateContainerFill(id: string, fill_level: number) {
+  const current = getContainers().map((c) => {
+    if (c.id !== id) return c
+    const status: ContainerRecord["status"] = fill_level >= 90 ? "critical" : fill_level >= 80 ? "warning" : "normal"
+    return { ...c, fill_level, status, last_updated: new Date().toISOString() }
+  })
+  writeJson(CONTAINERS_KEY, current)
+  return current.find((c) => c.id === id)
+}
+
+export function getContainersBySector(sectorName: string) {
+  return getContainers().filter((c) => c.sector === sectorName)
+}
+
+export function getCriticalContainers() {
+  return getContainers().filter((c) => c.status === "critical")
+}
+
+export function getWarningContainers() {
+  return getContainers().filter((c) => c.status === "warning")
+}
+
+export interface AnalyticsData {
+  totalDelays: number
+  unresolvedDelays: number
+  avgDelayMinutes: number
+  delaysBySector: Array<{ sector: string; count: number; avgMinutes: number }>
+  totalContainers: number
+  criticalContainers: number
+  warningContainers: number
+  containersBySector: Array<{ sector: string; count: number; avgFill: number; critical: number }>
+  totalIncidents: number
+  incidentsBySector: Array<{ sector: string; count: number }>
+}
+
+export function getAnalytics(): AnalyticsData {
+  const allDelays = getDelays()
+  const allContainers = getContainers()
+  const allIncidents = readJson<IncidentRecord[]>(INCIDENTS_KEY, defaultIncidents)
+
+  const unresolvedDelays = allDelays.filter((d) => d.status === "reported")
+
+  const delaySectorMap = new Map<string, { count: number; totalMinutes: number }>()
+  allDelays.forEach((d) => {
+    const entry = delaySectorMap.get(d.sector) || { count: 0, totalMinutes: 0 }
+    entry.count++
+    entry.totalMinutes += d.delay_minutes
+    delaySectorMap.set(d.sector, entry)
+  })
+
+  const containerSectorMap = new Map<string, { count: number; totalFill: number; critical: number }>()
+  allContainers.forEach((c) => {
+    const entry = containerSectorMap.get(c.sector) || { count: 0, totalFill: 0, critical: 0 }
+    entry.count++
+    entry.totalFill += c.fill_level
+    if (c.status === "critical") entry.critical++
+    containerSectorMap.set(c.sector, entry)
+  })
+
+  const incidentSectorMap = new Map<string, number>()
+  allIncidents.forEach((inc) => {
+    incidentSectorMap.set(inc.sector, (incidentSectorMap.get(inc.sector) || 0) + 1)
+  })
+
+  return {
+    totalDelays: allDelays.length,
+    unresolvedDelays: unresolvedDelays.length,
+    avgDelayMinutes: allDelays.length > 0 ? Math.round(allDelays.reduce((s, d) => s + d.delay_minutes, 0) / allDelays.length) : 0,
+    delaysBySector: Array.from(delaySectorMap.entries()).map(([sector, data]) => ({
+      sector,
+      count: data.count,
+      avgMinutes: Math.round(data.totalMinutes / data.count),
+    })),
+    totalContainers: allContainers.length,
+    criticalContainers: allContainers.filter((c) => c.status === "critical").length,
+    warningContainers: allContainers.filter((c) => c.status === "warning").length,
+    containersBySector: Array.from(containerSectorMap.entries()).map(([sector, data]) => ({
+      sector,
+      count: data.count,
+      avgFill: Math.round(data.totalFill / data.count),
+      critical: data.critical,
+    })),
+    totalIncidents: allIncidents.length,
+    incidentsBySector: Array.from(incidentSectorMap.entries()).map(([sector, count]) => ({ sector, count })),
+  }
+}
+
+export function estimateTruckArrival(sectorName: string): { minutes: number; isLate: boolean } {
+  const schedule = sectorSchedules[sectorName]
+  if (!schedule) return { minutes: 999, isLate: false }
+
+  const now = new Date()
+  const [h, m] = schedule.time.replace(" AM", "").replace(" PM", "").split(":").map(Number)
+  const expected = new Date(now)
+  expected.setHours(schedule.time.includes("PM") ? h + 12 : h, m, 0)
+
+  const diffMs = expected.getTime() - now.getTime()
+  const minutes = Math.round(diffMs / 60000)
+
+  return { minutes, isLate: minutes < -30 }
 }

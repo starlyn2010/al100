@@ -5,6 +5,7 @@ import { Menu } from "lucide-react"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { useRouter } from "next/navigation"
 import { NotificationSheet } from "./NotificationSheet"
+import { ThemeToggle } from "@/components/ThemeToggle"
 
 type UserRole = "citizen" | "driver" | "admin"
 
@@ -43,6 +44,7 @@ export function AppShell({ children, role }: AppShellProps) {
           </div>
 
           <div className="flex items-center gap-2">
+            <ThemeToggle />
             <NotificationSheet />
           </div>
         </header>

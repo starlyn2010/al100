@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useTheme } from "next-themes"
 import dynamic from "next/dynamic"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -11,6 +12,8 @@ import { getIncidents, incidents as seedIncidents, routes, trucks } from "@/lib/
 const TruckMap = dynamic(() => import("@/components/map/TruckMap"), { ssr: false })
 
 export default function AdminDashboard() {
+  const { resolvedTheme } = useTheme()
+  const isDark = resolvedTheme === "dark"
   const [liveIncidents, setLiveIncidents] = useState(seedIncidents)
 
   useEffect(() => {
@@ -79,6 +82,7 @@ export default function AdminDashboard() {
                 }))}
                 center={[18.486, -69.889]}
                 zoom={12}
+                dark={isDark}
               />
             </div>
           </CardContent>

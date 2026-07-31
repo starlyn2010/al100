@@ -1,13 +1,15 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useTheme } from "next-themes"
 import dynamic from "next/dynamic"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Truck, Clock, MapPin, RefreshCw, LocateFixed } from "lucide-react"
-import { guessSectorFromLocation, normalizeSectorSchedule, sectorSchedules, sectors } from "@/lib/al100-data"
+import { Truck, Clock, MapPin, RefreshCw, LocateFixed, AlertTriangle } from "lucide-react"
+import { guessSectorFromLocation, normalizeSectorSchedule, sectorSchedules, sectors, reportDelay, estimateTruckArrival } from "@/lib/al100-data"
+import { toast } from "sonner"
 
 const TruckMap = dynamic(() => import("@/components/map/TruckMap"), { ssr: false })
 
@@ -45,6 +47,8 @@ const buildRoutePath = (sector: string) => {
 }
 
 export default function CitizenRoutePage() {
+  const { resolvedTheme } = useTheme()
+  const isDark = resolvedTheme === "dark"
   const [truck, setTruck] = useState(MOCK_TRUCK)
   const [sector, setSector] = useState(MOCK_TRUCK.sector)
   const [locationLoading, setLocationLoading] = useState(false)
@@ -93,8 +97,26 @@ export default function CitizenRoutePage() {
     )
   }
 
+  const handleReportDelay = () => {
+    const arrival = estimateTruckArrival(sector)
+    reportDelay({
+      sector,
+      truck_id: "CAM-001",
+      reported_by: currentUser?.name || "Ciudadano",
+      expected_time: schedule?.time || "—",
+      delay_minutes: arrival.isLate ? Math.abs(arrival.minutes) : 15,
+    })
+    toast.success("Retraso reportado", { description: "Las autoridades han sido notificadas." })
+  }
+
+  const [currentUser] = useState<{ name?: string } | null>(() => {
+    if (typeof window === "undefined") return null
+    try { return JSON.parse(window.localStorage.getItem("al100_user") || "null") } catch { return null }
+  })
+
   const schedule = normalizeSectorSchedule(sector)
   const activeSchedule = schedule ?? normalizeSectorSchedule("Zona Colonial")
+  const arrival = estimateTruckArrival(sector)
 
   return (
     <div className="space-y-6">
@@ -185,6 +207,29 @@ export default function CitizenRoutePage() {
         </Card>
       </div>
 
+      <Card className="border-accent/20">
+        <CardContent className="p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2">
+            <Clock className="w-5 h-5 text-accent" />
+            <div>
+              <p className="text-sm font-medium">
+                {arrival.isLate
+                  ? `Retraso estimado: ${Math.abs(arrival.minutes)} min`
+                  : arrival.minutes > 0
+                    ? `Próximo paso en ~${arrival.minutes} min`
+                    : "Camión en ruta ahora"}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Horario esperado: {schedule?.time || "—"} · {schedule?.days || "—"}
+              </p>
+            </div>
+          </div>
+          <Button variant="outline" size="sm" className="gap-2 border-destructive/50 text-destructive hover:bg-destructive/10" onClick={handleReportDelay}>
+            <AlertTriangle className="w-4 h-4" /> Reportar Retraso
+          </Button>
+        </CardContent>
+      </Card>
+
       <Card className="overflow-hidden">
         <CardContent className="p-0">
           <div className="h-[500px] w-full">
@@ -192,6 +237,7 @@ export default function CitizenRoutePage() {
               trucks={[{ ...truck, lat: truck.lat, lng: truck.lng }]}
               center={[truck.lat, truck.lng]}
               zoom={14}
+              dark={isDark}
               routePaths={[
                 {
                   id: `route-${sector}`,

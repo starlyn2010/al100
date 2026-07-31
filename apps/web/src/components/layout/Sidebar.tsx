@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils"
 import type { LucideIcon } from "lucide-react"
 import {
   LayoutDashboard, Truck, Route, Map, Users, AlertTriangle,
-  Trash2, LogOut, ChevronLeft, ChevronRight, Crosshair,
+  Trash2, LogOut, ChevronLeft, ChevronRight, Crosshair, BarChart3,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useState } from "react"
@@ -28,6 +28,7 @@ const navItems: Record<UserRole, Array<{ href: string; label: string; icon: Luci
     { href: "/rutas", label: "Rutas", icon: Route },
     { href: "/camiones", label: "Camiones", icon: Truck },
     { href: "/sectores", label: "Sectores", icon: Trash2 },
+    { href: "/analytics", label: "Analytics", icon: BarChart3 },
     { href: "/usuarios", label: "Usuarios", icon: Users },
     { href: "/incidencias", label: "Incidencias", icon: AlertTriangle },
   ],

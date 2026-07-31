@@ -56,9 +56,9 @@ export default function SectorsPage() {
           <div className="h-[260px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#272F42" />
-                <XAxis dataKey="name" tick={{ fill: "#94A3B8", fontSize: 11 }} />
-                <YAxis tick={{ fill: "#94A3B8", fontSize: 11 }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
+                <XAxis dataKey="name" tick={{ fill: "var(--chart-text)", fontSize: 11 }} />
+                <YAxis tick={{ fill: "var(--chart-text)", fontSize: 11 }} />
                 <Tooltip
                   content={({ active, payload, label }) => {
                     if (!active || !payload?.length) return null

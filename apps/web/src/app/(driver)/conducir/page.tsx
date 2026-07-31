@@ -1,12 +1,15 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
+import { useTheme } from "next-themes"
 import dynamic from "next/dynamic"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Play, Square, MapPin, Signal, Clock, ChevronRight } from "lucide-react"
+import { Label } from "@/components/ui/label"
+import { Play, Square, MapPin, Signal, Clock, ChevronRight, Trash2 } from "lucide-react"
 import { toast } from "sonner"
+import { updateContainerFill, getContainersBySector, type ContainerRecord } from "@/lib/al100-data"
 
 const TruckMap = dynamic(() => import("@/components/map/TruckMap"), { ssr: false })
 
@@ -24,10 +27,20 @@ const ROUTE_PATH: [number, number][] = [
 ]
 
 export default function DriverPage() {
+  const { resolvedTheme } = useTheme()
+  const isDark = resolvedTheme === "dark"
   const [routeActive, setRouteActive] = useState(false)
   const [position, setPosition] = useState(INITIAL_POSITION)
   const [elapsed, setElapsed] = useState(0)
   const [routePoints, setRoutePoints] = useState<Array<{ lat: number; lng: number }>>([])
+  const [containers, setContainers] = useState<ContainerRecord[]>([])
+  const [selectedContainer, setSelectedContainer] = useState<string>("")
+  const [containerFill, setContainerFill] = useState(50)
+  const [showContainerPanel, setShowContainerPanel] = useState(false)
+
+  useEffect(() => {
+    setContainers(getContainersBySector("Zona Colonial"))
+  }, [])
   const animationRef = useRef<number | null>(null)
   const lastFrameRef = useRef<number | null>(null)
   const segmentRef = useRef(0)
@@ -165,6 +178,7 @@ export default function DriverPage() {
               trucks={[{ id: "my-truck", name: "Mi Camión", ...position, status: "on_route" }]}
               center={[position.lat, position.lng]}
               zoom={15}
+              dark={isDark}
               routePaths={[
                 ...(routePoints.length > 1 ? [{
                   id: "driver-route-history",
@@ -183,6 +197,79 @@ export default function DriverPage() {
           </div>
         </CardContent>
       </Card>
+
+      {routeActive && (
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <Trash2 className="w-4 h-4 text-accent" /> Actualizar Contenedores
+            </CardTitle>
+            <Button variant="ghost" size="icon-sm" onClick={() => setShowContainerPanel(!showContainerPanel)}>
+              <ChevronRight className={`w-4 h-4 transition-transform ${showContainerPanel ? "rotate-90" : ""}`} />
+            </Button>
+          </CardHeader>
+          {showContainerPanel && (
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>Selecciona un contenedor</Label>
+                <select
+                  className="w-full h-9 rounded-lg border border-border bg-background px-3 text-sm"
+                  value={selectedContainer}
+                  onChange={(e) => {
+                    setSelectedContainer(e.target.value)
+                    const c = containers.find((c) => c.id === e.target.value)
+                    if (c) setContainerFill(c.fill_level)
+                  }}
+                >
+                  <option value="">Seleccionar...</option>
+                  {containers.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.address} · {c.fill_level}% · {c.status}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {selectedContainer && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label>Nivel de llenado: {containerFill}%</Label>
+                    <span className={`text-xs font-medium ${
+                      containerFill >= 90 ? "text-destructive" : containerFill >= 80 ? "text-yellow-500" : "text-accent"
+                    }`}>
+                      {containerFill >= 90 ? "Crítico" : containerFill >= 80 ? "Advertencia" : "Normal"}
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    value={containerFill}
+                    onChange={(e) => setContainerFill(Number(e.target.value))}
+                    min={0}
+                    max={100}
+                    step={5}
+                    className="w-full h-2 rounded-full appearance-none cursor-pointer bg-muted accent-[#22C55E]"
+                  />
+                  <Button
+                    size="sm"
+                    className="w-full bg-accent hover:bg-accent/90"
+                    onClick={() => {
+                      updateContainerFill(selectedContainer, containerFill)
+                      setContainers(getContainersBySector("Zona Colonial"))
+                      toast.success("Contenedor actualizado", {
+                        description: `Nivel: ${containerFill}%`,
+                      })
+                      if (containerFill >= 90) {
+                        toast.warning("Contenedor crítico — programar recolección urgente", { duration: 5000 })
+                      }
+                    }}
+                  >
+                    Guardar nivel
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          )}
+        </Card>
+      )}
 
       <div className="flex gap-4">
         {!routeActive ? (
